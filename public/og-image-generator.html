@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>OG Image Generator - Elite Designer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      font-family: 'Inter', sans-serif;
+      gap: 20px;
+    }
+    p {
+      color: #aaa;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+    }
+    button {
+      padding: 12px 28px;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+    }
+
+    /* === OG IMAGE CANVAS 1200x630 === */
+    #og-card {
+      width: 1200px;
+      height: 630px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #0a0a0f;
+      transform-origin: top left;
+    }
+
+    /* Background gradient */
+    #og-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 800px 500px at 20% 50%, rgba(124,58,237,0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 400px at 80% 20%, rgba(59,130,246,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 400px 300px at 70% 80%, rgba(236,72,153,0.1) 0%, transparent 50%),
+        #0a0a0f;
+    }
+
+    /* Grid lines overlay */
+    #og-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .og-content {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 70px 90px;
+    }
+
+    .og-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.4);
+      border-radius: 100px;
+      padding: 6px 18px;
+      margin-bottom: 28px;
+      width: fit-content;
+    }
+    .og-badge-dot {
+      width: 8px;
+      height: 8px;
+      background: #a78bfa;
+      border-radius: 50%;
+    }
+    .og-badge-text {
+      color: #a78bfa;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .og-title {
+      font-size: 72px;
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      color: #ffffff;
+      letter-spacing: -2px;
+    }
+    .og-title span {
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #f472b6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .og-subtitle {
+      font-size: 22px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 400;
+      max-width: 620px;
+      line-height: 1.5;
+      margin-bottom: 44px;
+    }
+
+    .og-pills {
+      display: flex;
+      gap: 12px;
+    }
+    .og-pill {
+      padding: 8px 20px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .og-pill-1 { background: rgba(124,58,237,0.2); color: #a78bfa; border: 1px solid rgba(124,58,237,0.35); }
+    .og-pill-2 { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+    .og-pill-3 { background: rgba(236,72,153,0.12); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.25); }
+
+    /* Right side decoration */
+    .og-deco {
+      position: absolute;
+      right: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .og-deco-ring {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 2px solid rgba(124,58,237,0.25);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .og-deco-ring::before {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(124,58,237,0.15);
+    }
+    .og-deco-logo {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      font-weight: 900;
+      color: white;
+      letter-spacing: -1px;
+      box-shadow: 0 0 40px rgba(124,58,237,0.5);
+    }
+
+    /* URL bottom */
+    .og-url {
+      position: absolute;
+      bottom: 36px;
+      left: 90px;
+      right: 90px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .og-domain {
+      color: rgba(255,255,255,0.3);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    .og-cta {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: white;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+  </style>
+</head>
+<body>
+  <p>Abra este arquivo no navegador. Clique em "Salvar como PNG" para gerar a imagem OG (1200×630px).</p>
+  <button onclick="saveImage()">Salvar como PNG (og-image.png)</button>
+
+  <div id="og-card">
+    <div class="og-content">
+      <div class="og-badge">
+        <div class="og-badge-dot"></div>
+        <span class="og-badge-text">Web Design Premium</span>
+      </div>
+
+      <h1 class="og-title">
+        Sites que<br><span>vendem de verdade</span>
+      </h1>
+
+      <p class="og-subtitle">
+        Design profissional, performance máxima e resultados reais para o seu negócio.
+      </p>
+
+      <div class="og-pills">
+        <span class="og-pill og-pill-1">Web Design</span>
+        <span class="og-pill og-pill-2">E-commerce</span>
+        <span class="og-pill og-pill-3">Landing Pages</span>
+      </div>
+    </div>
+
+    <div class="og-deco">
+      <div class="og-deco-ring">
+        <div class="og-deco-logo">ED</div>
+      </div>
+    </div>
+
+    <div class="og-url">
+      <span class="og-domain">designer-web-de-elite.vercel.app</span>
+      <span class="og-cta">Solicitar Orçamento</span>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    // Scale card for display
+    function scaleCard() {
+      const card = document.getElementById('og-card');
+      const maxW = window.innerWidth - 80;
+      const scale = Math.min(1, maxW / 1200);
+      card.style.transform = `scale(${scale})`;
+      card.style.marginBottom = `${630 * scale - 630}px`;
+    }
+    scaleCard();
+    window.addEventListener('resize', scaleCard);
+
+    async function saveImage() {
+      const card = document.getElementById('og-card');
+      card.style.transform = 'scale(1)';
+      card.style.marginBottom = '0';
+      const canvas = await html2canvas(card, {
+        width: 1200,
+        height: 630,
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0a0a0f'
+      });
+      card.style.transform = '';
+      scaleCard();
+      const link = document.createElement('a');
+      link.download = 'og-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
