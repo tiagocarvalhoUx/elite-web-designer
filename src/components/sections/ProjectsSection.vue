@@ -31,16 +31,16 @@
           target="_blank"
           rel="noopener noreferrer"
           class="project-card group block rounded-xl overflow-hidden glass-card hover:border-purple-500/50 transition-all duration-300"
-          data-aos="flip-left"
-          data-aos-easing="ease-out-cubic"
-          :data-aos-duration="2000"
-          :data-aos-delay="index * 200"
+          data-aos="fade-up"
+          :data-aos-duration="400"
+          :data-aos-delay="index * 80"
         >
           <div class="relative overflow-hidden">
             <img
               class="w-full h-[200px] object-cover transform group-hover:scale-110 transition-transform duration-500"
               :src="project.src"
               :alt="project.alt"
+              :loading="index < 3 ? 'eager' : 'lazy'"
               @error="handleImageError"
             />
             <div

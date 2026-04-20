@@ -68,6 +68,8 @@ export const useProjectsStore = defineStore("projects", () => {
     search?: string;
     active?: boolean;
   }): Promise<void> => {
+    if (projects.value.length > 0 && !filters) return;
+
     loading.value = true;
     error.value = null;
 
