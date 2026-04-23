@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'logo.png', 'icon-192.svg', 'icon-512.svg'],
+      includeAssets: ['favicon.png', 'logo.png', 'icon-192.png', 'icon-512.png'],
       manifest: false, // usa o manifest.json do /public
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
