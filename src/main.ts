@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import axios from 'axios'
@@ -38,3 +39,5 @@ axios.interceptors.response.use(
 )
 
 app.mount('#app')
+
+registerSW({ immediate: true })
