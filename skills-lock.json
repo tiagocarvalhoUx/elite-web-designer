@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "expressjs-development": {
+      "source": "manutej/luxor-claude-marketplace",
+      "sourceType": "github",
+      "computedHash": "ed03c0f8e6967f81ec1ab35b5178d4897bc50f44d2343457cb0260d9e78ca42d"
+    },
+    "nestjs-best-practices": {
+      "source": "kadajett/agent-nestjs-skills",
+      "sourceType": "github",
+      "computedHash": "68658903272e1015f3ec5084c7d0988216a47f42f675ed819a675250fc6a23cd"
+    }
+  }
+}
