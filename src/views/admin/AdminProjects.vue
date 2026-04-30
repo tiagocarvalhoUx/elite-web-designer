@@ -88,6 +88,15 @@
       ></div>
     </div>
 
+    <div v-else-if="projectsStore.error" class="text-center py-12">
+      <GlassCard variant="dark">
+        <p class="text-red-400 mb-4">{{ projectsStore.error }}</p>
+        <NeonButton @click="loadProjects(true)" variant="secondary" size="sm">
+          Tentar novamente
+        </NeonButton>
+      </GlassCard>
+    </div>
+
     <div v-else-if="filteredProjects.length === 0" class="text-center py-12">
       <GlassCard variant="dark">
         <div
@@ -334,8 +343,15 @@
                 <strong class="text-white">{{ projectToDelete?.title }}</strong
                 >? Esta ação não pode ser desfeita.
               </p>
+              <p v-if="projectsStore.error" class="text-red-400 text-sm mb-4">
+                {{ projectsStore.error }}
+              </p>
               <div class="flex gap-3 justify-center">
-                <NeonButton @click="showDeleteModal = false" variant="ghost">
+                <NeonButton
+                  @click="showDeleteModal = false"
+                  variant="ghost"
+                  :disabled="projectsStore.loading"
+                >
                   Cancelar
                 </NeonButton>
                 <NeonButton
@@ -404,6 +420,7 @@ const showDeleteModal = ref(false);
 const projectToDelete = ref<Project | null>(null);
 
 const confirmDelete = (project: Project) => {
+  projectsStore.clearError();
   projectToDelete.value = project;
   showDeleteModal.value = true;
 };
@@ -438,9 +455,11 @@ const handleImageError = (event: Event) => {
   img.src = projectsStore.getImageUrl();
 };
 
-onMounted(() => {
-  projectsStore.fetchProjects({ active: false });
-});
+const loadProjects = (force = false) => {
+  projectsStore.fetchProjects({ active: false }, { force });
+};
+
+onMounted(loadProjects);
 </script>
 
 <style scoped>

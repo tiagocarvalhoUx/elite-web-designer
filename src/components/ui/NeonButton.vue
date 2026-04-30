@@ -1,6 +1,6 @@
 <template>
   <component
-    :is="tag"
+    :is="componentTag"
     :class="[
       'neon-button',
       `variant-${variant}`,
@@ -34,7 +34,11 @@
     <!-- Content -->
     <span class="button-content" :class="{ 'opacity-0': loading }">
       <!-- Left Icon -->
-      <span v-if="iconLeft" class="icon icon-left">
+      <span v-if="$slots.icon" class="icon icon-left">
+        <slot name="icon"></slot>
+      </span>
+
+      <span v-else-if="iconLeft" class="icon icon-left">
         <component :is="iconLeft" />
       </span>
       
@@ -57,13 +61,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type Component } from 'vue'
+import { computed, ref, useSlots, type Component } from 'vue'
 
 interface Props {
   /** Tag HTML ou componente a ser renderizado */
   tag?: string | Component
   /** Rota para navegação (se for link) */
   to?: string
+  href?: string
   /** Texto do botão */
   label?: string
   /** Variante visual */
@@ -93,6 +98,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   tag: 'button',
   to: '',
+  href: '',
   label: '',
   variant: 'primary',
   size: 'md',
@@ -109,8 +115,15 @@ const emit = defineEmits<{
 }>()
 
 const rippleContainer = ref<HTMLElement>()
+const slots = useSlots()
 
-const hasIcon = computed(() => !!props.iconLeft || !!props.iconRight || !!props.icon)
+const hasIcon = computed(() => !!slots.icon || !!props.iconLeft || !!props.iconRight || !!props.icon)
+
+const componentTag = computed(() => {
+  if (props.to) return 'router-link'
+  if (props.href) return 'a'
+  return props.tag
+})
 
 const linkProps = computed(() => {
   if (props.to) {
@@ -120,11 +133,21 @@ const linkProps = computed(() => {
       rel: props.external ? 'noopener noreferrer' : undefined
     }
   }
+  if (props.href) {
+    return {
+      href: props.href,
+      target: props.external ? '_blank' : undefined,
+      rel: props.external ? 'noopener noreferrer' : undefined
+    }
+  }
   return { type: props.type }
 })
 
 const handleClick = (event: MouseEvent) => {
-  if (props.disabled || props.loading) return
+  if (props.disabled || props.loading) {
+    event.preventDefault()
+    return
+  }
   
   // Criar ripple effect
   createRipple(event)

@@ -35,10 +35,10 @@ router.get('/', asyncHandler(async (req, res) => {
 
   if (category) { query += ' AND category = ?'; params.push(category); }
 
-  if (active !== undefined) {
+  if (active !== undefined && active !== 'false') {
     query += ' AND is_active = ?';
     params.push(active === 'true' ? 1 : 0);
-  } else {
+  } else if (active === undefined) {
     query += ' AND is_active = 1';
   }
 
@@ -63,11 +63,11 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/projects
 router.post('/', authenticateToken, upload.single('image'), asyncHandler(async (req, res) => {
-  const { title, description, project_link, category, is_active } = req.body;
+  const { title, description, project_link, category, is_active, image_url } = req.body;
 
   if (!title) throw new ValidationError('Título é obrigatório');
 
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : image_url || null;
 
   const [result] = await pool.execute(
     'INSERT INTO projects (title, description, image_url, project_link, category, is_active) VALUES (?, ?, ?, ?, ?, ?)',
@@ -82,7 +82,7 @@ router.post('/', authenticateToken, upload.single('image'), asyncHandler(async (
 // PUT /api/projects/:id
 router.put('/:id', authenticateToken, upload.single('image'), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { title, description, project_link, category, is_active } = req.body;
+  const { title, description, project_link, category, is_active, image_url } = req.body;
 
   const [existing] = await pool.execute('SELECT id FROM projects WHERE id = ?', [id]);
   if (existing.length === 0) throw new NotFoundError('Projeto não encontrado');
@@ -93,6 +93,7 @@ router.put('/:id', authenticateToken, upload.single('image'), asyncHandler(async
   if (title !== undefined) { updates.push('title = ?'); params.push(title); }
   if (description !== undefined) { updates.push('description = ?'); params.push(description); }
   if (req.file) { updates.push('image_url = ?'); params.push(`/uploads/${req.file.filename}`); }
+  else if (image_url !== undefined) { updates.push('image_url = ?'); params.push(image_url); }
   if (project_link !== undefined) { updates.push('project_link = ?'); params.push(project_link); }
   if (category !== undefined) { updates.push('category = ?'); params.push(category); }
   if (is_active !== undefined) { updates.push('is_active = ?'); params.push(is_active === 'true' || is_active === true ? 1 : 0); }

@@ -9,6 +9,8 @@ let API_URL = rawApiUrl.replace(/\/+$/, "");
 if (!API_URL.startsWith("http") && !API_URL.startsWith("/")) {
   API_URL = "/" + API_URL;
 }
+const REQUEST_TIMEOUT_MS = 10000;
+const AUTH_CACHE_TTL_MS = 60000;
 
 console.log("[Auth] API_URL:", API_URL); // Debug - remover depois
 
@@ -23,6 +25,7 @@ export const useAuthStore = defineStore("auth", () => {
   const token = ref<string | null>(localStorage.getItem("token"));
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const lastVerifiedAt = ref(0);
 
   // Getters
   const isAuthenticated = computed(() => !!token.value);
@@ -56,8 +59,10 @@ export const useAuthStore = defineStore("auth", () => {
         user.value = authData?.user || null;
         if (token.value) {
           localStorage.setItem("token", token.value);
+          lastVerifiedAt.value = Date.now();
         } else {
           localStorage.removeItem("token");
+          lastVerifiedAt.value = 0;
         }
         setAuthHeader();
         return true;
@@ -96,6 +101,7 @@ export const useAuthStore = defineStore("auth", () => {
   const logout = () => {
     user.value = null;
     token.value = null;
+    lastVerifiedAt.value = 0;
     localStorage.removeItem("token");
     delete axios.defaults.headers.common["Authorization"];
   };
@@ -105,10 +111,24 @@ export const useAuthStore = defineStore("auth", () => {
 
     setAuthHeader();
 
+    if (
+      lastVerifiedAt.value &&
+      Date.now() - lastVerifiedAt.value < AUTH_CACHE_TTL_MS
+    ) {
+      return true;
+    }
+
     try {
       // Verificar token fazendo uma requisição protegida
-      const response = await axios.get(`${API_URL}/auth/verify`);
-      return response.data.success;
+      const response = await axios.get(`${API_URL}/auth/verify`, {
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+      if (response.data.success) {
+        user.value = response.data.data?.user || user.value;
+        lastVerifiedAt.value = Date.now();
+        return true;
+      }
+      return false;
     } catch {
       logout();
       return false;

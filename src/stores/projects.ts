@@ -10,6 +10,8 @@ if (!API_URL.startsWith("http") && !API_URL.startsWith("/")) {
   API_URL = "/" + API_URL;
 }
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, "");
+const REQUEST_TIMEOUT_MS = 15000;
+const FETCH_CACHE_TTL_MS = 30000;
 
 console.log("[Projects] API_URL:", API_URL); // Debug - remover depois
 const PLACEHOLDER_IMAGE_URL =
@@ -40,6 +42,8 @@ export const useProjectsStore = defineStore("projects", () => {
   const currentProject = ref<Project | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const lastFetchKey = ref("");
+  const lastFetchedAt = ref(0);
 
   // Getters
   const activeProjects = computed(() =>
@@ -67,8 +71,16 @@ export const useProjectsStore = defineStore("projects", () => {
     category?: string;
     search?: string;
     active?: boolean;
-  }): Promise<void> => {
-    if (projects.value.length > 0 && !filters) return;
+  }, options?: { force?: boolean }): Promise<void> => {
+    const cacheKey = JSON.stringify(filters || {});
+    if (
+      projects.value.length > 0 &&
+      !options?.force &&
+      lastFetchKey.value === cacheKey &&
+      Date.now() - lastFetchedAt.value < FETCH_CACHE_TTL_MS
+    ) {
+      return;
+    }
 
     loading.value = true;
     error.value = null;
@@ -85,10 +97,12 @@ export const useProjectsStore = defineStore("projects", () => {
         url += `?${params.toString()}`;
       }
 
-      const response = await axios.get(url);
+      const response = await axios.get(url, { timeout: REQUEST_TIMEOUT_MS });
 
       if (response.data.success) {
         projects.value = response.data.data;
+        lastFetchKey.value = cacheKey;
+        lastFetchedAt.value = Date.now();
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || "Erro ao carregar projetos";
@@ -98,14 +112,26 @@ export const useProjectsStore = defineStore("projects", () => {
   };
 
   const getProject = async (id: number): Promise<Project | null> => {
+    const cachedProject = projects.value.find((p) => p.id === id);
+    if (cachedProject) {
+      currentProject.value = cachedProject;
+      return cachedProject;
+    }
+
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await axios.get(`${API_URL}/projects/${id}`);
+      const response = await axios.get(`${API_URL}/projects/${id}`, {
+        timeout: REQUEST_TIMEOUT_MS,
+      });
 
       if (response.data.success) {
         currentProject.value = response.data.data;
+        const index = projects.value.findIndex((p) => p.id === id);
+        if (index !== -1) {
+          projects.value[index] = response.data.data;
+        }
         return response.data.data;
       }
       return null;
@@ -126,10 +152,13 @@ export const useProjectsStore = defineStore("projects", () => {
     try {
       // Não precisa definir headers - axios usa defaults (inclui Authorization)
       // Para FormData, axios detecta automaticamente o Content-Type
-      const response = await axios.post(`${API_URL}/projects`, projectData);
+      const response = await axios.post(`${API_URL}/projects`, projectData, {
+        timeout: REQUEST_TIMEOUT_MS,
+      });
 
       if (response.data.success) {
         projects.value.unshift(response.data.data);
+        lastFetchedAt.value = Date.now();
         return true;
       }
       return false;
@@ -159,6 +188,7 @@ export const useProjectsStore = defineStore("projects", () => {
       const response = await axios.put(
         `${API_URL}/projects/${id}`,
         projectData,
+        { timeout: REQUEST_TIMEOUT_MS },
       );
 
       if (response.data.success) {
@@ -166,6 +196,8 @@ export const useProjectsStore = defineStore("projects", () => {
         if (index !== -1) {
           projects.value[index] = response.data.data;
         }
+        currentProject.value = response.data.data;
+        lastFetchedAt.value = Date.now();
         return true;
       }
       return false;
@@ -188,15 +220,27 @@ export const useProjectsStore = defineStore("projects", () => {
     error.value = null;
 
     try {
-      const response = await axios.delete(`${API_URL}/projects/${id}`);
+      const response = await axios.delete(`${API_URL}/projects/${id}`, {
+        timeout: REQUEST_TIMEOUT_MS,
+      });
 
       if (response.data.success) {
         projects.value = projects.value.filter((p) => p.id !== id);
+        if (currentProject.value?.id === id) {
+          currentProject.value = null;
+        }
+        lastFetchedAt.value = Date.now();
         return true;
       }
       return false;
     } catch (err: any) {
-      error.value = err.response?.data?.message || "Erro ao deletar projeto";
+      const status = err.response?.status;
+      if (status === 401 || status === 403) {
+        error.value = "SessÃ£o expirada. FaÃ§a login novamente.";
+      } else {
+        error.value = err.response?.data?.message || "Erro ao deletar projeto";
+      }
+      console.error("[deleteProject] Erro:", err.response?.data || err.message);
       return false;
     } finally {
       loading.value = false;

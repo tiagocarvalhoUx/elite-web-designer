@@ -400,8 +400,15 @@
                 <strong class="text-white">{{ projectToDelete?.title }}</strong
                 >? Esta ação não pode ser desfeita.
               </p>
+              <p v-if="projectsStore.error" class="text-red-400 text-sm mb-4">
+                {{ projectsStore.error }}
+              </p>
               <div class="flex gap-3 justify-center">
-                <NeonButton @click="showDeleteModal = false" variant="ghost">
+                <NeonButton
+                  @click="showDeleteModal = false"
+                  variant="ghost"
+                  :disabled="projectsStore.loading"
+                >
                   Cancelar
                 </NeonButton>
                 <NeonButton
@@ -555,6 +562,7 @@ const showDeleteModal = ref(false);
 const projectToDelete = ref<Project | null>(null);
 
 const confirmDelete = (project: Project) => {
+  projectsStore.clearError();
   projectToDelete.value = project;
   showDeleteModal.value = true;
 };
