@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import axios from "axios";
 
 // Normaliza a URL da API
-const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const rawApiUrl = import.meta.env.VITE_API_URL || "/api";
 // Remove trailing slashes e garante que começa com / se não for http
 let API_URL = rawApiUrl.replace(/\/+$/, "");
 if (!API_URL.startsWith("http") && !API_URL.startsWith("/")) {
@@ -105,7 +105,13 @@ export const useProjectsStore = defineStore("projects", () => {
         lastFetchedAt.value = Date.now();
       }
     } catch (err: any) {
-      error.value = err.response?.data?.message || "Erro ao carregar projetos";
+      if (err.code === "ECONNABORTED") {
+        error.value = "A API demorou para responder. Tente novamente.";
+      } else if (!err.response) {
+        error.value = "NÃ£o foi possÃ­vel conectar Ã  API de projetos.";
+      } else {
+        error.value = err.response?.data?.message || "Erro ao carregar projetos";
+      }
     } finally {
       loading.value = false;
     }
