@@ -98,13 +98,74 @@ import AOS from "aos";
 
 const projectsStore = useProjectsStore();
 
-// Projetos originais com imagens locais
 interface Project {
   src: string;
   alt: string;
   link: string;
 }
-const originalProjects: Project[] = [];
+
+const fallbackProjects: Project[] = [
+  {
+    src: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800",
+    alt: "Mrv Imobiliaria",
+    link: "https://mrv-house.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=800",
+    alt: "Pet Shop",
+    link: "https://petshop-chi.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800",
+    alt: "Cafe Pulse",
+    link: "https://coffe-web-henna.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800",
+    alt: "Marcenaria",
+    link: "https://marcenaria-vue.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1602607688655-94e4730c5f2e?w=800",
+    alt: "Reza Vela",
+    link: "https://reza-vela.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=800",
+    alt: "Caetano Hidraulica",
+    link: "https://caetano-hidraulica.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800",
+    alt: "Hamburgueria",
+    link: "https://cardapio-hambuguer-three.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=800",
+    alt: "Barbearia Prime",
+    link: "https://barbearia-react-eight.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1561758033-d9a63f80764a?w=800",
+    alt: "Faster Food",
+    link: "https://faster-food-omega.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=800",
+    alt: "Pomodoro IA",
+    link: "https://pomodoroai.vercel.app/",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800",
+    alt: "Imperio Bebidas",
+    link: "https://imperio-bebidas.vercel.app/tabs",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
+    alt: "Sistema Para Vendas - Claro",
+    link: "https://sistema-de-vendas-claro.vercel.app/",
+  },
+];
 
 // Buscar projetos novos da API
 onMounted(() => {
@@ -124,7 +185,7 @@ watch(
 // Combinar projetos originais + novos da API (que não sejam os mesmos)
 const projects = computed(() => {
   // Projetos novos da API (excluir os que já existem nos originais)
-  const originalTitles = originalProjects.map((p) => p.alt.toLowerCase());
+  const originalTitles = fallbackProjects.map((p) => p.alt.toLowerCase());
   const newFromApi = projectsStore.activeProjects
     .filter(
       (p) =>
@@ -140,7 +201,7 @@ const projects = computed(() => {
       link: p.project_link,
     }));
 
-  return [...originalProjects, ...newFromApi];
+  return [...fallbackProjects, ...newFromApi];
 });
 
 // Handler para erro de imagem

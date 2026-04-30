@@ -10,8 +10,9 @@ if (!API_URL.startsWith("http") && !API_URL.startsWith("/")) {
   API_URL = "/" + API_URL;
 }
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, "");
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 45000;
 const FETCH_CACHE_TTL_MS = 30000;
+const PROJECTS_CACHE_PREFIX = "elite-projects-cache:";
 
 console.log("[Projects] API_URL:", API_URL); // Debug - remover depois
 const PLACEHOLDER_IMAGE_URL =
@@ -73,6 +74,7 @@ export const useProjectsStore = defineStore("projects", () => {
     active?: boolean;
   }, options?: { force?: boolean }): Promise<void> => {
     const cacheKey = JSON.stringify(filters || {});
+    const storageKey = `${PROJECTS_CACHE_PREFIX}${cacheKey}`;
     if (
       projects.value.length > 0 &&
       !options?.force &&
@@ -80,6 +82,13 @@ export const useProjectsStore = defineStore("projects", () => {
       Date.now() - lastFetchedAt.value < FETCH_CACHE_TTL_MS
     ) {
       return;
+    }
+
+    const cachedProjects = getCachedProjects(storageKey);
+    if (cachedProjects.length > 0 && projects.value.length === 0) {
+      projects.value = cachedProjects;
+      lastFetchKey.value = cacheKey;
+      lastFetchedAt.value = Date.now();
     }
 
     loading.value = true;
@@ -101,10 +110,18 @@ export const useProjectsStore = defineStore("projects", () => {
 
       if (response.data.success) {
         projects.value = response.data.data;
+        setCachedProjects(storageKey, response.data.data);
         lastFetchKey.value = cacheKey;
         lastFetchedAt.value = Date.now();
       }
     } catch (err: any) {
+      if (cachedProjects.length > 0) {
+        projects.value = cachedProjects;
+        lastFetchKey.value = cacheKey;
+        lastFetchedAt.value = Date.now();
+        return;
+      }
+
       if (err.code === "ECONNABORTED") {
         error.value = "A API demorou para responder. Tente novamente.";
       } else if (!err.response) {
@@ -273,6 +290,25 @@ export const useProjectsStore = defineStore("projects", () => {
 
   const clearCurrentProject = () => {
     currentProject.value = null;
+  };
+
+  const getCachedProjects = (key: string): Project[] => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const setCachedProjects = (key: string, value: Project[]) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Cache indisponivel ou cheio; a API continua sendo a fonte principal.
+    }
   };
 
   const getImageUrl = (imageUrl?: string): string => {
