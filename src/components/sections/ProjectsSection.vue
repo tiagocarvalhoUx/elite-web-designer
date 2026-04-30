@@ -26,7 +26,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <a
           v-for="(project, index) in projects"
-          :key="index"
+          :key="project.link || project.alt"
           :href="project.link"
           target="_blank"
           rel="noopener noreferrer"
@@ -185,23 +185,19 @@ watch(
 // Combinar projetos originais + novos da API (que não sejam os mesmos)
 const projects = computed(() => {
   // Projetos novos da API (excluir os que já existem nos originais)
-  const originalTitles = fallbackProjects.map((p) => p.alt.toLowerCase());
-  const newFromApi = projectsStore.activeProjects
-    .filter(
-      (p) =>
-        !originalTitles.some(
-          (title) =>
-            p.title.toLowerCase().includes(title.replace("projeto ", "")) ||
-            title.includes(p.title.toLowerCase()),
-        ),
-    )
-    .map((p) => ({
+  if (projectsStore.activeProjects.length > 0) {
+    return projectsStore.activeProjects.map((p) => ({
       src: projectsStore.getImageUrl(p.image_url),
       alt: p.title,
       link: p.project_link,
     }));
+  }
 
-  return [...fallbackProjects, ...newFromApi];
+  if (projectsStore.loading && !projectsStore.error) {
+    return [];
+  }
+
+  return fallbackProjects;
 });
 
 // Handler para erro de imagem
