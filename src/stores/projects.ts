@@ -10,8 +10,8 @@ if (!API_URL.startsWith("http") && !API_URL.startsWith("/")) {
   API_URL = "/" + API_URL;
 }
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, "");
-const REQUEST_TIMEOUT_MS = 45000;
-const FETCH_CACHE_TTL_MS = 30000;
+const REQUEST_TIMEOUT_MS = 12000;
+const FETCH_CACHE_TTL_MS = 5 * 60 * 1000;
 const PROJECTS_CACHE_PREFIX = "elite-projects-cache:";
 
 console.log("[Projects] API_URL:", API_URL); // Debug - remover depois
@@ -37,13 +37,27 @@ export interface Project {
   updated_at?: string;
 }
 
+// Hidratação síncrona do cache no boot — projetos aparecem antes do primeiro paint
+const readInitialCache = (): Project[] => {
+  try {
+    const raw = typeof localStorage !== "undefined"
+      ? localStorage.getItem(`${PROJECTS_CACHE_PREFIX}{}`)
+      : null;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const useProjectsStore = defineStore("projects", () => {
   // State
-  const projects = ref<Project[]>([]);
+  const projects = ref<Project[]>(readInitialCache());
   const currentProject = ref<Project | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const lastFetchKey = ref("");
+  const lastFetchKey = ref(projects.value.length > 0 ? "{}" : "");
   const lastFetchedAt = ref(0);
 
   // Getters
@@ -75,6 +89,15 @@ export const useProjectsStore = defineStore("projects", () => {
   }, options?: { force?: boolean }): Promise<void> => {
     const cacheKey = JSON.stringify(filters || {});
     const storageKey = `${PROJECTS_CACHE_PREFIX}${cacheKey}`;
+
+    // Hidrata UI instantaneamente com cache local (SWR)
+    const cachedProjects = getCachedProjects(storageKey);
+    if (cachedProjects.length > 0 && projects.value.length === 0) {
+      projects.value = cachedProjects;
+      lastFetchKey.value = cacheKey;
+    }
+
+    // Se cache em memória ainda fresco, evita request
     if (
       projects.value.length > 0 &&
       !options?.force &&
@@ -84,14 +107,8 @@ export const useProjectsStore = defineStore("projects", () => {
       return;
     }
 
-    const cachedProjects = getCachedProjects(storageKey);
-    if (cachedProjects.length > 0 && projects.value.length === 0) {
-      projects.value = cachedProjects;
-      lastFetchKey.value = cacheKey;
-      lastFetchedAt.value = Date.now();
-    }
-
-    loading.value = true;
+    // Não bloqueia UI com loading=true se já temos dados em cache
+    loading.value = projects.value.length === 0;
     error.value = null;
 
     try {
@@ -311,14 +328,26 @@ export const useProjectsStore = defineStore("projects", () => {
     }
   };
 
-  const getImageUrl = (imageUrl?: string): string => {
+  const getImageUrl = (imageUrl?: string, width = 800): string => {
     if (!imageUrl) return PLACEHOLDER_IMAGE_URL;
+
+    // Cloudinary: injeta transformações para entrega otimizada (WebP/AVIF, qualidade adaptativa, resize)
+    const cloudinaryMatch = imageUrl.match(
+      /^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/,
+    );
+    if (cloudinaryMatch) {
+      const [, prefix, rest] = cloudinaryMatch;
+      // Evita duplicar transformações se já existirem
+      if (/^(v\d+\/|[a-z]_[^/]+\/)/.test(rest) && !rest.startsWith("v")) {
+        return imageUrl;
+      }
+      return `${prefix}f_auto,q_auto,w_${width},c_fill,dpr_auto/${rest}`;
+    }
 
     if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       return imageUrl;
     }
 
-    // Se for base64, retorna direto
     if (imageUrl.startsWith("data:image/")) {
       return imageUrl;
     }

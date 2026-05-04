@@ -41,6 +41,8 @@
               :src="project.src"
               :alt="project.alt"
               :loading="index < 3 ? 'eager' : 'lazy'"
+              :fetchpriority="index < 3 ? 'high' : 'low'"
+              decoding="async"
               @error="handleImageError"
             />
             <div
@@ -182,9 +184,8 @@ watch(
   { deep: true }
 );
 
-// Combinar projetos originais + novos da API (que não sejam os mesmos)
+// Sempre exibir algo — fallback imediato evita grid vazio durante o request inicial
 const projects = computed(() => {
-  // Projetos novos da API (excluir os que já existem nos originais)
   if (projectsStore.activeProjects.length > 0) {
     return projectsStore.activeProjects.map((p) => ({
       src: projectsStore.getImageUrl(p.image_url),
@@ -192,11 +193,6 @@ const projects = computed(() => {
       link: p.project_link,
     }));
   }
-
-  if (projectsStore.loading && !projectsStore.error) {
-    return [];
-  }
-
   return fallbackProjects;
 });
 

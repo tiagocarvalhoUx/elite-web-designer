@@ -1,5 +1,6 @@
 import { initDb } from "../_lib/db.js";
 import { authenticateToken, setCors } from "../_lib/auth.js";
+import { uploadBuffer } from "../_lib/cloudinary.js";
 import multer from "multer";
 import path from "path";
 
@@ -24,7 +25,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 3 * 1024 * 1024, // 3MB (limite da Vercel é 4.5MB, base64 aumenta ~33%)
+    fileSize: 10 * 1024 * 1024,
   },
 });
 
@@ -199,17 +200,20 @@ export default async function handler(req, res) {
               else resolve();
             });
           });
+          let imageUrl = req.body.image_url;
+          if (req.file) {
+            imageUrl = await uploadBuffer(req.file.buffer, req.file.mimetype);
+          }
           projectData = {
             title: req.body.title,
             description: req.body.description,
-            image_url: req.file
-              ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
-              : req.body.image_url,
+            image_url: imageUrl,
             project_link: req.body.project_link,
             category: req.body.category,
             is_active: req.body.is_active,
           };
         } catch (uploadErr) {
+          console.error("[POST /api/projects] upload error:", uploadErr);
           return res.status(400).json({
             success: false,
             message: "Erro no upload da imagem",
