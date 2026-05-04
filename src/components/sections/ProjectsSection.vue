@@ -89,11 +89,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch, nextTick } from "vue";
+import { computed } from "vue";
 import NeonButton from "../ui/NeonButton.vue";
 import TechBadge from "../ui/TechBadge.vue";
 import { useProjectsStore } from "../../stores";
-import AOS from "aos";
 
 // Imports das imagens dos projetos originais
 // ...existing code...
@@ -169,32 +168,8 @@ const fallbackProjects: Project[] = [
   },
 ];
 
-// Buscar projetos novos da API
-onMounted(() => {
-  projectsStore.fetchProjects();
-});
-
-// Atualizar AOS quando projetos forem carregados
-watch(
-  () => projectsStore.activeProjects,
-  async () => {
-    await nextTick();
-    AOS.refresh();
-  },
-  { deep: true }
-);
-
-// Sempre exibir algo — fallback imediato evita grid vazio durante o request inicial
-const projects = computed(() => {
-  if (projectsStore.activeProjects.length > 0) {
-    return projectsStore.activeProjects.map((p) => ({
-      src: projectsStore.getImageUrl(p.image_url),
-      alt: p.title,
-      link: p.project_link,
-    }));
-  }
-  return fallbackProjects;
-});
+// Lista fixa de projetos — renderização instantânea, sem chamada de API
+const projects = computed(() => fallbackProjects);
 
 // Handler para erro de imagem
 const handleImageError = (event: Event) => {
